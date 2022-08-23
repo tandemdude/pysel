@@ -1,0 +1,143 @@
+import abc
+import enum
+import typing as t
+
+__all__ = [
+    "TokenType",
+    "Token",
+    "LiteralMixin",
+    "OperatorToken",
+    "IdentifierToken",
+    "StringToken",
+    "IntToken",
+    "FloatToken",
+    "UnexpectedToken",
+]
+
+
+class TokenType(enum.Enum):
+    # Compound tokens
+    SUBSTITUTION = "${\\w[\\w\\d]+}"
+    IDENTIFIER = "\\w[\\w\\d]+"
+    INT_LITERAL = "[\\d]+"
+    FLOAT_LITERAL = "[\\d]+\\.[\\d]*"
+    STRING_LITERAL = "'.*'"
+    # Special tokens
+    UNKNOWN = "UNKNOWN"
+    SUB_EXPRESSION = "SUB_EXPRESSION"
+    # Operators
+    OPERATOR_EQ = "=="
+    OPERATOR_NOT_EQ = "!="
+    OPERATOR_GREATER_THAN = ">"
+    OPERATOR_LESS_THAN = "<"
+    OPERATOR_GREATER_EQUALS = ">="
+    OPERATOR_LESS_EQUALS = "<="
+    OPERATOR_NOT = "!"
+    OPERATOR_AND = "&&"
+    OPERATOR_OR = "||"
+    OPERATOR_ADD = "+"
+    OPERATOR_SUB = "-"
+    OPERATOR_MULTIPLY = "*"
+    OPERATOR_DIVIDE = "/"
+    OPERATOR_INTEGER_DIVIDE = "//"
+    OPERATOR_MODULO = "%"
+    # Special characters
+    QUESTION_MARK = "?"
+    COLON = ":"
+    ACCESSOR = "."
+    COMMA = ","
+    L_PAREN = "("
+    R_PAREN = ")"
+
+
+EXCLUDED_TOKEN_TYPES = {
+    TokenType.SUBSTITUTION,
+    TokenType.IDENTIFIER,
+    TokenType.INT_LITERAL,
+    TokenType.FLOAT_LITERAL,
+    TokenType.STRING_LITERAL,
+    TokenType.UNKNOWN,
+    TokenType.SUB_EXPRESSION
+}
+SORTED_TOKEN_TYPES = sorted(
+    set(TokenType).difference(EXCLUDED_TOKEN_TYPES),
+    key=lambda itm: len(itm.value),
+    reverse=True,
+)
+
+
+class Token(abc.ABC):
+    __slots__ = ("value", "at", "type")
+
+    value: t.Any
+    at: int
+    type: TokenType
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(value={self.value!r}, type={self.type})"
+
+    def validate(self) -> bool:
+        return True
+
+
+class LiteralMixin:
+    __slots__ = ()
+
+
+class OperatorToken(Token):
+    __slots__ = ()
+
+    def __init__(self, type: TokenType, at: int) -> None:
+        self.value = type.value
+        self.at = at
+        self.type = type
+
+
+class IdentifierToken(Token):
+    __slots__ = ()
+
+    type: TokenType = TokenType.IDENTIFIER
+
+    def __init__(self, value: str, at: int) -> None:
+        self.value = value
+        self.at = at
+
+
+class StringToken(Token, LiteralMixin):
+    __slots__ = ()
+
+    type: TokenType = TokenType.STRING_LITERAL
+
+    def __init__(self, value: str, at: int) -> None:
+        self.value = value.replace("\\", "")
+        self.at = at
+
+
+class IntToken(Token, LiteralMixin):
+    __slots__ = ()
+
+    type: TokenType = TokenType.INT_LITERAL
+
+    def __init__(self, value: str, at: int) -> None:
+        self.value: int = int(value)
+        self.at = at
+
+
+class FloatToken(Token, LiteralMixin):
+    __slots__ = ()
+
+    type: TokenType = TokenType.FLOAT_LITERAL
+
+    def __init__(self, value: str, at: int) -> None:
+        self.value = float(value)
+        self.at = at
+
+
+class UnexpectedToken(Token):
+    __slots__ = ()
+
+    type: TokenType = TokenType.UNKNOWN
+
+    def __init__(self, value: str, at: int) -> None:
+        self.value: str = value
+        self.at = at
