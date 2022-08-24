@@ -36,6 +36,7 @@ def test(session):
     session.install("-Ur", "dev_requirements.txt")
     session.run("python", "-m", "pytest", "tests")
 
+
 # @nox.session(reuse_venv=True)
 # def sphinx(session):
 #     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

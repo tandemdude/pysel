@@ -350,9 +350,9 @@ class Parser:
         node = self.method_call()
 
         while (nxt := self.peek_next_token()) is not None and nxt.value == "**":
-            op = self.next_token().value
+            op = self.next_token().value  # type: ignore[union-attr]
             self.error_stack.appendleft("expr")
-            node = BinaryOp(self.method_call(), op, node)  # type: ignore[union-attr]
+            node = BinaryOp(self.method_call(), op, node)
             self.error_stack.popleft()
 
         return node

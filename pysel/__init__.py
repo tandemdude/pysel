@@ -43,7 +43,7 @@ class Expression:
         self.ast = ast.Parser(self.raw, lexer.Lexer(self.raw).tokenize()).compilation_unit()
         return self.ast
 
-    def evaluate(self, env: t.Optional[t.Mapping[str, t.Any]] = None) -> t.Any:
+    def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None) -> t.Any:
         env = env or {}
         for primitive in (bool, float, int, str):
             env.setdefault(primitive.__name__, primitive)
