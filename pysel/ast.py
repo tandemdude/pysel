@@ -107,7 +107,7 @@ class UnaryOp(Node):
         return f"UnaryOp({self.operator}, {self.operand})"
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
-        return UNARY_OPERATOR_MAPPING[self.operator](self.operand.evaluate(env))
+        return UNARY_OPERATOR_MAPPING[self.operator](self.operand.evaluate(env))  # type: ignore[operator]
 
 
 class BinaryOp(Node):
@@ -179,7 +179,7 @@ class MethodCall(Node):
 class Getitem(Node):
     __slots__ = ("operand", "params")
 
-    def __init__(self, operand: Node, params: t.Sequence[Node]) -> None:
+    def __init__(self, operand: Node, params: t.Sequence[t.Optional[Node]]) -> None:
         self.operand = operand
         self.params: t.List[t.Optional[Node]] = list(params)
 
@@ -190,7 +190,7 @@ class Getitem(Node):
         if len(self.params) > 1:
             self.params.extend([None] * (3 - len(self.params)))
             return self.operand.evaluate(env)[slice(*(p.evaluate(env) if p else None for p in self.params))]
-        assert len(self.params) == 1
+        assert len(self.params) == 1 and self.params[0] is not None
         return self.operand.evaluate(env)[self.params[0].evaluate(env)]
 
 
@@ -242,7 +242,7 @@ class Parser:
     def val(self) -> Node:
         if self.peek_next_token() is None:
             self.syntax_error()
-        elif self.peek_next_token().value == "(":
+        elif self.peek_next_token().value == "(":  # type: ignore[union-attr]
             self.next_token()
             self.error_stack.appendleft(")")
             node = self.ternary()
@@ -252,9 +252,9 @@ class Parser:
             self.next_token()
             return node
         elif isinstance(self.peek_next_token(), tokens_.IdentifierToken):
-            return Reference(self.next_token().value)
+            return Reference(self.next_token().value)  # type: ignore[union-attr]
         elif isinstance(self.peek_next_token(), tokens_.LiteralMixin):
-            return Literal(self.next_token().value)
+            return Literal(self.next_token().value)  # type: ignore[union-attr]
         self.syntax_error()
 
     def accessor(self, initial_node: t.Optional[Node] = None) -> Node:
@@ -267,7 +267,7 @@ class Parser:
             if self.peek_next_token() is None:
                 self.syntax_error()
 
-            node = Accessor(node, self.next_token().value)
+            node = Accessor(node, self.next_token().value)  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node
@@ -278,7 +278,7 @@ class Parser:
         while (nxt := self.peek_next_token()) is not None and nxt.value == "[":
             self.error_stack.appendleft("]")
             self.next_token()
-            if self.peek_next_token() is None or self.peek_next_token().value == "]":
+            if (tkn := self.peek_next_token()) is None or tkn.value == "]":
                 self.error_stack.appendleft("expr | :")
                 self.syntax_error()
 
@@ -291,7 +291,7 @@ class Parser:
 
                 self.error_stack.appendleft("expr | :")
                 self.next_token()
-                if self.peek_next_token() is not None and self.peek_next_token().value == ":":
+                if (tkn := self.peek_next_token()) is not None and tkn.value == ":":
                     self.error_stack.popleft()
                     params.append(None)
                     continue
@@ -301,7 +301,7 @@ class Parser:
                 )
                 self.error_stack.popleft()
 
-            if self.peek_next_token() is None or self.peek_next_token().value != "]":
+            if (tkn := self.peek_next_token()) is None or tkn.value != "]":
                 self.syntax_error()
 
             node = Getitem(node, params)
@@ -332,7 +332,7 @@ class Parser:
                     arguments.append(self.ternary())
                     self.error_stack.popleft()
 
-                if self.peek_next_token() is None or self.peek_next_token().value != ")":
+                if (tkn := self.peek_next_token()) is None or tkn.value != ")":
                     self.syntax_error()
 
                 node = MethodCall(node, arguments)
@@ -365,7 +365,7 @@ class Parser:
             "%",
         ):
             self.error_stack.appendleft("expr")
-            node = BinaryOp(node, self.next_token().value, self.unary_expr())
+            node = BinaryOp(node, self.next_token().value, self.unary_expr())  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node
@@ -375,7 +375,7 @@ class Parser:
 
         while (nxt := self.peek_next_token()) is not None and nxt.value in ("+", "-"):
             self.error_stack.appendleft("expr")
-            node = BinaryOp(node, self.next_token().value, self.multi())
+            node = BinaryOp(node, self.next_token().value, self.multi())  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node
@@ -392,7 +392,7 @@ class Parser:
             "<=",
         ):
             self.error_stack.appendleft("expr")
-            node = BinaryOp(node, self.next_token().value, self.expr())
+            node = BinaryOp(node, self.next_token().value, self.expr())  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node
@@ -412,7 +412,7 @@ class Parser:
 
         while (nxt := self.peek_next_token()) is not None and nxt.value == "&&":
             self.error_stack.appendleft("expr")
-            node = BinaryOp(node, self.next_token().value, self.logical_not())
+            node = BinaryOp(node, self.next_token().value, self.logical_not())  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node
@@ -422,7 +422,7 @@ class Parser:
 
         while (nxt := self.peek_next_token()) is not None and nxt.value == "||":
             self.error_stack.appendleft("expr")
-            node = BinaryOp(node, self.next_token().value, self.logical_and())
+            node = BinaryOp(node, self.next_token().value, self.logical_and())  # type: ignore[union-attr]
             self.error_stack.popleft()
 
         return node

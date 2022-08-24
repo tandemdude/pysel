@@ -60,8 +60,8 @@ class Lexer:
 
     def parse_while(
         self,
-        char: str,
-        condition: t.Callable[[str, int, t.List[str]], bool],
+        char: t.Optional[str],
+        condition: t.Callable[[t.Optional[str], int, t.List[str]], bool],
         fail_on_eof: bool = False,
     ) -> str:
         buf: t.List[str] = []
@@ -69,6 +69,7 @@ class Lexer:
         while condition(char, offset, buf):
             if fail_on_eof and char is None:
                 raise errors.ExpressionSyntaxError("Unexpected EOF while parsing", self.raw, [self.idx])
+            assert char is not None
             buf.append(char)
             char, offset = self.peek(offset + 1), offset + 1
         return "".join(buf)
@@ -115,6 +116,7 @@ class Lexer:
                 self.eof = True
                 break
 
+            assert charindex is not None
             token, consumed = self.as_token(char, charindex)
             if consumed > 1:
                 self.idx += consumed - 1
