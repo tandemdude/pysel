@@ -28,7 +28,7 @@ def format_check(session):
 @nox.session()
 def mypy(session):
     session.install("-Ur", "dev_requirements.txt")
-    session.run("python", "-m", "mypy", "lightbulb")
+    session.run("python", "-m", "mypy", "pysel")
 
 
 # @nox.session(reuse_venv=True)
