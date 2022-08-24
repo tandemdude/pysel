@@ -126,7 +126,7 @@ class BinaryOp(Node):
         if self.operator == "||":
             return self.lh.evaluate(env) or self.rh.evaluate(env)
         elif self.operator == "&&":
-            return self.lh.evaluate(env) and self.lh.evaluate(env)
+            return self.lh.evaluate(env) and self.rh.evaluate(env)
 
         return BINARY_OPERATOR_MAPPING[self.operator](self.lh.evaluate(env), self.rh.evaluate(env))
 

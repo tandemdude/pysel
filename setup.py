@@ -62,7 +62,7 @@ meta = parse_meta()
 setup(
     name="pysel",
     version=meta.version,
-    description="A simple but powerful expression language for Python",
+    description="A simple but powerful embedded expression language for Python",
     long_description=long_description(),
     long_description_content_type="text/markdown",
     author="tandemdude",
