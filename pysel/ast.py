@@ -53,8 +53,6 @@ BINARY_OPERATOR_MAPPING = {
     "<": operator_.lt,
     ">=": operator_.ge,
     "<=": operator_.le,
-    "&&": operator_.and_,
-    "||": operator_.or_,
     "+": operator_.add,
     "-": operator_.sub,
     "*": operator_.mul,
@@ -124,6 +122,12 @@ class BinaryOp(Node):
         return f"BinaryOp({self.lh}, {self.operator}, {self.rh})"
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
+        # We process 'or' and 'and' separately to allow operator short-circuiting
+        if self.operator == "||":
+            return self.lh.evaluate(env) or self.rh.evaluate(env)
+        elif self.operator == "&&":
+            return self.lh.evaluate(env) and self.lh.evaluate(env)
+
         return BINARY_OPERATOR_MAPPING[self.operator](self.lh.evaluate(env), self.rh.evaluate(env))
 
 
