@@ -110,7 +110,6 @@ class Lexer:
                 break
 
             token, consumed = self.as_token(char, charindex)
-            token.validate()
             if consumed > 1:
                 self.idx += consumed - 1
 

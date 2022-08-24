@@ -160,7 +160,7 @@ class Accessor(Node):
 class MethodCall(Node):
     __slots__ = ("operand", "arguments")
 
-    def __init__(self, operand: Node, arguments: t.Sequence[t.Any]) -> None:
+    def __init__(self, operand: Node, arguments: t.Sequence[Node]) -> None:
         self.operand = operand
         self.arguments = arguments
 
@@ -169,6 +169,24 @@ class MethodCall(Node):
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return self.operand.evaluate(env)(*(a.evaluate(env) for a in self.arguments))
+
+
+class Getitem(Node):
+    __slots__ = ("operand", "params")
+
+    def __init__(self, operand: Node, params: t.Sequence[Node]) -> None:
+        self.operand = operand
+        self.params: t.List[t.Optional[Node]] = list(params)
+
+    def __repr__(self) -> str:
+        return f"Getitem({self.operand}, params={self.params})"
+
+    def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
+        if len(self.params) > 1:
+            self.params.extend([None] * (3 - len(self.params)))
+            return self.operand.evaluate(env)[slice(*(p.evaluate(env) if p else None for p in self.params))]
+        assert len(self.params) == 1
+        return self.operand.evaluate(env)[self.params[0].evaluate(env)]
 
 
 class Parser:
@@ -249,8 +267,46 @@ class Parser:
 
         return node
 
+    def getitem(self, initial_node: t.Optional[Node] = None) -> Node:
+        node = initial_node or self.accessor()
+
+        while (nxt := self.peek_next_token()) is not None and nxt.value == "[":
+            self.error_stack.appendleft("]")
+            self.next_token()
+            if self.peek_next_token() is None or self.peek_next_token().value == "]":
+                self.error_stack.appendleft("expr | :")
+                self.syntax_error()
+
+            params: t.List[t.Optional[Node]] = [self.ternary() if getattr(self.peek_next_token(), "value", None) != ":" else None]
+            while (nxt2 := self.peek_next_token()) is not None and nxt2.value == ":":
+                if len(params) >= 3:
+                    self.syntax_error()
+
+                self.error_stack.appendleft("expr | :")
+                self.next_token()
+                if self.peek_next_token() is not None and self.peek_next_token().value == ":":
+                    self.error_stack.popleft()
+                    params.append(None)
+                    continue
+
+                params.append(self.ternary() if getattr(self.peek_next_token(), "value", None) not in (":", "]") else None)
+                self.error_stack.popleft()
+
+            if self.peek_next_token() is None or self.peek_next_token().value != "]":
+                self.syntax_error()
+
+            node = Getitem(node, params)
+            self.next_token()  # Remove R_SQUARE_BRACKET
+            self.error_stack.popleft()
+
+            if (nxt := self.peek_next_token()) is not None and nxt.value == ".":
+                # Chained call special case
+                node = self.accessor(node)
+
+        return node
+
     def method_call(self) -> Node:
-        node = self.accessor()
+        node = self.getitem()
 
         while (nxt := self.peek_next_token()) is not None and nxt.value == "(":
             self.next_token()
@@ -274,10 +330,10 @@ class Parser:
             self.next_token()  # Remove R_PAREN
             self.error_stack.popleft()
 
-            if (nxt := self.peek_next_token()) is not None and nxt.value == ".":
+            if (nxt := self.peek_next_token()) is not None and nxt.value in ["[", "."]:
                 # We have a chained call - as far as I can tell this is a special case
                 # as I could not get this to parse correctly without the below
-                node = self.accessor(node)
+                node = self.getitem(node)
 
         return node
 

@@ -68,6 +68,8 @@ class TokenType(enum.Enum):
     COMMA = ","
     L_PAREN = "("
     R_PAREN = ")"
+    L_SQUARE_BRACKET = "["
+    R_SQUARE_BRACKET = "]"
 
 
 EXCLUDED_TOKEN_TYPES = {
@@ -95,9 +97,6 @@ class Token(abc.ABC):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(value={self.value!r}, type={self.type})"
-
-    def validate(self) -> bool:
-        return True
 
 
 class LiteralMixin:
