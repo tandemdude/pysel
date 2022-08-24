@@ -331,8 +331,7 @@ class Parser:
             self.error_stack.popleft()
 
             if (nxt := self.peek_next_token()) is not None and nxt.value in ["[", "."]:
-                # We have a chained call - as far as I can tell this is a special case
-                # as I could not get this to parse correctly without the below
+                # Chained call special case
                 node = self.getitem(node)
 
         return node
