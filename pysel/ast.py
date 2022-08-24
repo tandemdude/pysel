@@ -268,7 +268,7 @@ class Parser:
         return node
 
     def getitem(self, initial_node: t.Optional[Node] = None) -> Node:
-        node = initial_node or self.accessor()
+        node = self.accessor(initial_node)
 
         while (nxt := self.peek_next_token()) is not None and nxt.value == "[":
             self.error_stack.appendleft("]")
