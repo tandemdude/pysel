@@ -44,4 +44,7 @@ class Expression:
         return self.ast
 
     def evaluate(self, env: t.Optional[t.Mapping[str, t.Any]] = None) -> t.Any:
+        env = env or {}
+        for primitive in (bool, float, int, str):
+            env.setdefault(primitive.__name__, primitive)
         return self.to_ast().evaluate(env or {})

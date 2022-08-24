@@ -37,14 +37,12 @@ __all__ = [
 
 class TokenType(enum.Enum):
     # Compound tokens
-    SUBSTITUTION = "${\\w[\\w\\d]+}"
     IDENTIFIER = "\\w[\\w\\d]+"
     INT_LITERAL = "[\\d]+"
     FLOAT_LITERAL = "[\\d]+\\.[\\d]*"
     STRING_LITERAL = "'.*'"
     # Special tokens
     UNKNOWN = "UNKNOWN"
-    SUB_EXPRESSION = "SUB_EXPRESSION"
     # Operators
     OPERATOR_EQ = "=="
     OPERATOR_NOT_EQ = "!="
@@ -61,6 +59,7 @@ class TokenType(enum.Enum):
     OPERATOR_DIVIDE = "/"
     OPERATOR_INTEGER_DIVIDE = "//"
     OPERATOR_MODULO = "%"
+    OPERATOR_POW = "**"
     # Special characters
     QUESTION_MARK = "?"
     COLON = ":"
@@ -73,13 +72,11 @@ class TokenType(enum.Enum):
 
 
 EXCLUDED_TOKEN_TYPES = {
-    TokenType.SUBSTITUTION,
     TokenType.IDENTIFIER,
     TokenType.INT_LITERAL,
     TokenType.FLOAT_LITERAL,
     TokenType.STRING_LITERAL,
     TokenType.UNKNOWN,
-    TokenType.SUB_EXPRESSION,
 }
 SORTED_TOKEN_TYPES = sorted(
     set(TokenType).difference(EXCLUDED_TOKEN_TYPES),

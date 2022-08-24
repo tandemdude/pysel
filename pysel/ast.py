@@ -59,6 +59,7 @@ BINARY_OPERATOR_MAPPING = {
     "/": operator_.truediv,
     "//": operator_.floordiv,
     "%": operator_.mod,
+    "**": operator_.pow,
 }
 
 
@@ -345,15 +346,26 @@ class Parser:
 
         return node
 
+    def pow(self) -> Node:
+        node = self.method_call()
+
+        while (nxt := self.peek_next_token()) is not None and nxt.value == "**":
+            op = self.next_token().value
+            self.error_stack.appendleft("expr")
+            node = BinaryOp(self.method_call(), op, node)  # type: ignore[union-attr]
+            self.error_stack.popleft()
+
+        return node
+
     def unary_expr(self) -> Node:
         node = None
         while (nxt := self.peek_next_token()) is not None and nxt.value in ("-", "+"):
             self.next_token()
             self.error_stack.appendleft("expr")
-            node = UnaryOp(nxt.value, self.method_call())
+            node = UnaryOp(nxt.value, self.pow())
             self.error_stack.popleft()
 
-        return node or self.method_call()
+        return node or self.pow()
 
     def multi(self) -> Node:
         node = self.unary_expr()
