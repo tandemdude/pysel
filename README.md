@@ -96,11 +96,11 @@ Note that this does not cover operator precedence, see the above section for tha
 The below is written using [Extended Backus-Naur form](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form):
 
 ```ebnf
-all characters = /* All characters valid in a python string */;
+all characters = ? All characters valid in a python string ?;
 
-letter = /* All characters in set [a-zA-Z] */;
+letter = ? All characters in set [a-zA-Z] ?;
 
-digit = /* All characters in set [0-9] */;
+digit = ? All characters in set [0-9] ?;
 
 unop = "-" | "+" | "!";
 

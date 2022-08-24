@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2022-present tandemdude
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 from __future__ import annotations
 
 import abc
@@ -162,7 +182,7 @@ class Parser:
         self.error_stack: collections.deque[str] = collections.deque()
 
     def syntax_error(self) -> t.NoReturn:
-        char_indexes = []
+        char_indexes: t.List[int] = []
 
         if self.idx == -1:
             char_indexes.append(0)
@@ -176,8 +196,11 @@ class Parser:
             raise errors.ExpressionSyntaxError(
                 f"Expected {self.error_stack.popleft()!r} was not found", self.raw, char_indexes
             )
+
+        next_token = self.tokens[self.idx + 1:][0]
+        char_indexes = [*range(next_token.at, next_token.at + len(str(next_token.value)))]
         raise errors.ExpressionSyntaxError(
-            "An error was encountered while parsing", self.raw, char_indexes
+            "Unexpected token encountered while parsing", self.raw, char_indexes
         )
 
     def next_token(self) -> t.Optional[tokens_.Token]:
@@ -348,4 +371,9 @@ class Parser:
         return node
 
     def compilation_unit(self) -> Node:
-        return self.ternary()
+        node = self.ternary()
+
+        if self.tokens[self.idx + 1:]:
+            self.syntax_error()
+
+        return node

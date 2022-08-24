@@ -33,10 +33,7 @@ pip-wheel-metadata/
 .docs/build/
 
 # Test files
-bot_test.py
-extension_test.py
-testext/
-.token
+test.py
 
 # Stupid OSX files
 .DS_Store
