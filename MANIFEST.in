@@ -1,0 +1,6 @@
+graft pysel
+include pysel/py.typed
+include setup.py
+include README.md
+include pyproject.toml
+global-exclude *.py[cod]

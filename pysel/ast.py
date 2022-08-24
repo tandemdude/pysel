@@ -25,7 +25,8 @@ import collections
 import operator as operator_
 import typing as t
 
-from pysel import tokens as tokens_, errors
+from pysel import errors
+from pysel import tokens as tokens_
 
 __all__ = [
     "Node",
@@ -36,7 +37,7 @@ __all__ = [
     "TernaryOp",
     "Accessor",
     "MethodCall",
-    "Parser"
+    "Parser",
 ]
 
 T = t.TypeVar("T")
@@ -205,21 +206,21 @@ class Parser:
         if self.idx == -1:
             char_indexes.append(0)
         elif self.idx >= len(self.tokens):
-            char_indexes.append(len(self.raw)-1)
+            char_indexes.append(len(self.raw) - 1)
         else:
             curr_token = self.tokens[self.idx]
             char_indexes.extend(range(curr_token.at, curr_token.at + len(str(curr_token.value))))
 
         if self.error_stack:
             raise errors.ExpressionSyntaxError(
-                f"Expected {self.error_stack.popleft()!r} was not found", self.raw, char_indexes
+                f"Expected {self.error_stack.popleft()!r} was not found",
+                self.raw,
+                char_indexes,
             )
 
-        next_token = self.tokens[self.idx + 1:][0]
+        next_token = self.tokens[self.idx + 1 :][0]
         char_indexes = [*range(next_token.at, next_token.at + len(str(next_token.value)))]
-        raise errors.ExpressionSyntaxError(
-            "Unexpected token encountered while parsing", self.raw, char_indexes
-        )
+        raise errors.ExpressionSyntaxError("Unexpected token encountered while parsing", self.raw, char_indexes)
 
     def next_token(self) -> t.Optional[tokens_.Token]:
         self.idx += 1
@@ -277,7 +278,9 @@ class Parser:
                 self.error_stack.appendleft("expr | :")
                 self.syntax_error()
 
-            params: t.List[t.Optional[Node]] = [self.ternary() if getattr(self.peek_next_token(), "value", None) != ":" else None]
+            params: t.List[t.Optional[Node]] = [
+                self.ternary() if getattr(self.peek_next_token(), "value", None) != ":" else None
+            ]
             while (nxt2 := self.peek_next_token()) is not None and nxt2.value == ":":
                 if len(params) >= 3:
                     self.syntax_error()
@@ -289,7 +292,9 @@ class Parser:
                     params.append(None)
                     continue
 
-                params.append(self.ternary() if getattr(self.peek_next_token(), "value", None) not in (":", "]") else None)
+                params.append(
+                    self.ternary() if getattr(self.peek_next_token(), "value", None) not in (":", "]") else None
+                )
                 self.error_stack.popleft()
 
             if self.peek_next_token() is None or self.peek_next_token().value != "]":
@@ -349,7 +354,12 @@ class Parser:
     def multi(self) -> Node:
         node = self.unary_expr()
 
-        while (nxt := self.peek_next_token()) is not None and nxt.value in ("*", "/", "//", "%"):
+        while (nxt := self.peek_next_token()) is not None and nxt.value in (
+            "*",
+            "/",
+            "//",
+            "%",
+        ):
             self.error_stack.appendleft("expr")
             node = BinaryOp(node, self.next_token().value, self.unary_expr())
             self.error_stack.popleft()
@@ -369,7 +379,14 @@ class Parser:
     def comparison(self) -> Node:
         node = self.expr()
 
-        while (nxt := self.peek_next_token()) is not None and nxt.value in ("==", "!=", ">", "<", ">=", "<="):
+        while (nxt := self.peek_next_token()) is not None and nxt.value in (
+            "==",
+            "!=",
+            ">",
+            "<",
+            ">=",
+            "<=",
+        ):
             self.error_stack.appendleft("expr")
             node = BinaryOp(node, self.next_token().value, self.expr())
             self.error_stack.popleft()
@@ -428,7 +445,7 @@ class Parser:
     def compilation_unit(self) -> Node:
         node = self.ternary()
 
-        if self.tokens[self.idx + 1:]:
+        if self.tokens[self.idx + 1 :]:
             self.syntax_error()
 
         return node

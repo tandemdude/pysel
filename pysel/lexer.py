@@ -20,8 +20,8 @@
 # SOFTWARE.
 import typing as t
 
-from pysel import tokens
 from pysel import errors
+from pysel import tokens
 
 __all__ = ["Lexer"]
 
@@ -58,14 +58,17 @@ class Lexer:
     def peek_to_length(self, n_ahead: int = 1) -> str:
         return self.raw[self.idx : self.idx + n_ahead]
 
-    def parse_while(self, char: str, condition: t.Callable[[str, int, t.List[str]], bool], fail_on_eof: bool = False) -> str:
+    def parse_while(
+        self,
+        char: str,
+        condition: t.Callable[[str, int, t.List[str]], bool],
+        fail_on_eof: bool = False,
+    ) -> str:
         buf: t.List[str] = []
         offset: int = 0
         while condition(char, offset, buf):
             if fail_on_eof and char is None:
-                raise errors.ExpressionSyntaxError(
-                    "Unexpected EOF while parsing", self.raw, [self.idx]
-                )
+                raise errors.ExpressionSyntaxError("Unexpected EOF while parsing", self.raw, [self.idx])
             buf.append(char)
             char, offset = self.peek(offset + 1), offset + 1
         return "".join(buf)
@@ -80,11 +83,14 @@ class Lexer:
             tkn = self.parse_while(
                 "",
                 lambda c, o, _: c != looking_for or self.raw[self.idx + o - 1 : self.idx + o + 1] == f"\\{looking_for}",
-                True
+                True,
             )
             return tokens.StringToken(tkn, charindex), len(tkn) + 2
         if char.isdecimal():
-            tkn = self.parse_while(char, lambda c, _, b: c is not None and (c.isdecimal() or (c == "." and "." not in b)))
+            tkn = self.parse_while(
+                char,
+                lambda c, _, b: c is not None and (c.isdecimal() or (c == "." and "." not in b)),
+            )
             if "." in tkn:
                 return tokens.FloatToken(tkn, charindex), len(tkn)
             return tokens.IntToken(tkn, charindex), len(tkn)
@@ -99,7 +105,7 @@ class Lexer:
             if (tkn := self.peek_to_length(len(value))) == value:
                 return tokens.OperatorToken(token_type, charindex), len(tkn)
 
-        return tokens.UnexpectedToken(char, charindex), 1
+        return tokens.ErrorToken(char, charindex), 1
 
     def tokenize(self) -> t.List[tokens.Token]:
         while not self.eof:
@@ -115,9 +121,11 @@ class Lexer:
 
             self.tokens.append(token)
 
-        if invalid := list(filter(lambda tk: isinstance(tk, tokens.UnexpectedToken), self.tokens)):
+        if invalid := list(filter(lambda tk: isinstance(tk, tokens.ErrorToken), self.tokens)):
             raise errors.ExpressionSyntaxError(
-                "Unexpected tokens encountered during lexing", self.raw, [i.at for i in invalid]
+                "Unexpected tokens encountered during lexing",
+                self.raw,
+                [i.at for i in invalid],
             )
 
         return self.tokens

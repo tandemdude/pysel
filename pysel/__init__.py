@@ -21,9 +21,9 @@
 import typing as t
 
 from pysel import ast
+from pysel import errors
 from pysel import lexer
 from pysel import tokens
-from pysel import errors
 
 __all__ = ["ast", "lexer", "tokens", "Expression"]
 

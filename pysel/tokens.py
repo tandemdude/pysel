@@ -31,7 +31,7 @@ __all__ = [
     "StringToken",
     "IntToken",
     "FloatToken",
-    "UnexpectedToken",
+    "ErrorToken",
 ]
 
 
@@ -79,7 +79,7 @@ EXCLUDED_TOKEN_TYPES = {
     TokenType.FLOAT_LITERAL,
     TokenType.STRING_LITERAL,
     TokenType.UNKNOWN,
-    TokenType.SUB_EXPRESSION
+    TokenType.SUB_EXPRESSION,
 }
 SORTED_TOKEN_TYPES = sorted(
     set(TokenType).difference(EXCLUDED_TOKEN_TYPES),
@@ -152,7 +152,7 @@ class FloatToken(Token, LiteralMixin):
         self.at = at
 
 
-class UnexpectedToken(Token):
+class ErrorToken(Token):
     __slots__ = ()
 
     type: TokenType = TokenType.UNKNOWN

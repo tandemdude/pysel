@@ -32,7 +32,10 @@ def parse_meta():
     with open(os.path.join(name, "__init__.py")) as fp:
         code = fp.read()
 
-    token_pattern = re.compile(r"^__(?P<key>\w+)?__\s*=\s*(?P<quote>(?:'{3}|\"{3}|'|\"))(?P<value>.*?)(?P=quote)", re.M)
+    token_pattern = re.compile(
+        r"^__(?P<key>\w+)?__\s*=\s*(?P<quote>(?:'{3}|\"{3}|'|\"))(?P<value>.*?)(?P=quote)",
+        re.M,
+    )
 
     groups = {}
 
@@ -67,19 +70,18 @@ setup(
     url="https://github.com/tandemdude/pysel",
     packages=find_namespace_packages(include=[name + "*"]),
     license="MIT",
+    include_package_data=True,
     python_requires=">=3.8.0,<3.11",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "License :: OSI Approved :: MIT License"
-        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License" "Intended Audience :: Developers",
         "Natural Language :: English",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: 3 :: Only",
-        "Topic :: Software Development :: Interpreters"
-        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Interpreters" "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
