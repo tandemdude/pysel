@@ -9,7 +9,7 @@ SCRIPT_PATHS = [
     "noxfile.py",
 ]
 
-options.sessions = ["format_fix", "mypy"]
+options.sessions = ["format_fix", "mypy", "test"]
 
 
 @nox.session()
