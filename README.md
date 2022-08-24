@@ -17,6 +17,7 @@ The expression language supports the following functionality:
 - Boolean, relational and mathematical operators
 - Attribute/property access
 - Method invocation
+- Getitem (list indexing, slicing, dict accessing, etc)
 - Ternary operator
 - Runtime environment injection
 
@@ -114,7 +115,7 @@ float = int, "." [, int];
 str = ("'" [, { all characters - "'" | "\'" }], "'") |
         ('"' [, { all characters - '"' | '\"' }], '"');
 
-expr = int | str | float | expr binop expr | unop expr | ternary | identifier | accessor | methodcall;
+expr = int | str | float | expr binop expr | unop expr | ternary | identifier | accessor | methodcall | getitem;
 
 ternary = expr, "?", expr, ":", expr;
 
@@ -123,6 +124,10 @@ identifier = (letter | "_") [, { letter | digit | "_" }];
 accessor = expr, ".", identifier;
 
 methodcall = expr, "(", expr [, { ",", expr }], ")";
+
+slice = [expr], ":" [, expr] [, ":" [expr]]
+
+getitem = expr "[", slice | expr, "]"
 ```
 
 # TODO
