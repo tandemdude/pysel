@@ -60,7 +60,7 @@ def parse_requirements_file(path):
 meta = parse_meta()
 
 setup(
-    name="pysel",
+    name="pysel-lang",
     version=meta.version,
     description="A simple but powerful embedded expression language for Python",
     long_description=long_description(),
@@ -74,14 +74,16 @@ setup(
     python_requires=">=3.8.0,<3.11",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "License :: OSI Approved :: MIT License" "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Intended Audience :: Developers",
         "Natural Language :: English",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: 3 :: Only",
-        "Topic :: Software Development :: Interpreters" "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Interpreters",
+        "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],

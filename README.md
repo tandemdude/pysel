@@ -9,6 +9,14 @@ This is somewhat influenced by the
 [Spring Expression Language (SpEL)](https://docs.spring.io/spring-framework/docs/3.0.x/reference/expressions.html),
 widely used by the Spring portfolio.
 
+## Installation
+
+PySEL can be installed using pip:
+
+```shell
+$ pip install pysel-lang
+```
+
 ## Feature Overview
 
 The expression language supports the following functionality:
