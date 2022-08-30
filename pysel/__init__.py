@@ -29,8 +29,10 @@ __all__ = ["ast", "lexer", "tokens", "Expression"]
 
 __version__ = "0.0.1"
 
+T = t.TypeVar("T")
 
-class Expression:
+
+class Expression(t.Generic[T]):
     __slots__ = ("raw", "ast")
 
     def __init__(self, raw: str) -> None:
@@ -43,8 +45,8 @@ class Expression:
         self.ast = ast.Parser(self.raw, lexer.Lexer(self.raw).tokenize()).compilation_unit()
         return self.ast
 
-    def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None) -> t.Any:
+    def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None) -> T:
         env = env or {}
         for primitive in (bool, float, int, str):
             env.setdefault(primitive.__name__, primitive)
-        return self.to_ast().evaluate(env or {})
+        return t.cast(T, self.to_ast().evaluate(env or {}))
