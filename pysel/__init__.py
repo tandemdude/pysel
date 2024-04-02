@@ -27,7 +27,7 @@ from pysel import tokens
 
 __all__ = ["ast", "lexer", "tokens", "Expression"]
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 T = t.TypeVar("T")
 

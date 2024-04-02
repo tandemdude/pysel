@@ -71,7 +71,7 @@ class Node(abc.ABC):
         ...
 
 
-class Literal(Node):
+class Literal(Node, t.Generic[T]):
     __slots__ = ("value",)
 
     def __init__(self, value: T) -> None:

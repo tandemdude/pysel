@@ -71,7 +71,7 @@ setup(
     packages=find_namespace_packages(include=[name + "*"]),
     license="MIT",
     include_package_data=True,
-    python_requires=">=3.8.0,<3.11",
+    python_requires=">=3.8.0,<3.13",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: MIT License",
@@ -80,6 +80,8 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12"
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Software Development :: Interpreters",
