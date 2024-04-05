@@ -67,6 +67,10 @@ class Node(abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
+    def compile(self) -> str:
+        ...
+
+    @abc.abstractmethod
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         ...
 
@@ -80,6 +84,9 @@ class Literal(Node, t.Generic[T]):
     def __repr__(self) -> str:
         return f"Literal({self.value!r})"
 
+    def compile(self) -> str:
+        return repr(self.value)
+
     def evaluate(self, env: t.Mapping[str, t.Any]) -> T:
         return self.value
 
@@ -92,6 +99,9 @@ class Reference(Node):
 
     def __repr__(self) -> str:
         return f"Reference({self.name!r})"
+
+    def compile(self) -> str:
+        return self.name
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return env[self.name]
@@ -107,6 +117,9 @@ class UnaryOp(Node):
     def __repr__(self) -> str:
         return f"UnaryOp({self.operator}, {self.operand})"
 
+    def compile(self) -> str:
+        return f"{self.operator}({self.operand.compile()})" if self.operator != "!" else f"not ({self.operand.compile()})"
+
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return UNARY_OPERATOR_MAPPING[self.operator](self.operand.evaluate(env))  # type: ignore[operator]
 
@@ -121,6 +134,13 @@ class BinaryOp(Node):
 
     def __repr__(self) -> str:
         return f"BinaryOp({self.lh}, {self.operator}, {self.rh})"
+
+    def compile(self) -> str:
+        # special case && , ||
+        if self.operator == "&&" or self.operator == "||":
+            return f"({self.lh.compile()}) {'and' if self.operator == '&&' else 'or'} ({self.rh.compile()})"
+
+        return f"({self.lh.compile()}) {self.operator} ({self.rh.compile()})"
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         # We process 'or' and 'and' separately to allow operator short-circuiting
@@ -143,6 +163,9 @@ class TernaryOp(Node):
     def __repr__(self) -> str:
         return f"TernaryOp({self.condition} ? {self.when_true} : {self.when_false})"
 
+    def compile(self) -> str:
+        return f"({self.when_true.compile()}) if ({self.condition.compile()}) else ({self.when_false.compile()})"
+
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         if self.condition.evaluate(env):
             return self.when_true.evaluate(env)
@@ -159,6 +182,9 @@ class Accessor(Node):
     def __repr__(self) -> str:
         return f"Accessor({self.operand}, {self.attr!r})"
 
+    def compile(self) -> str:
+        return f"({self.operand.compile()}).{self.attr}"
+
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return getattr(self.operand.evaluate(env), self.attr)
 
@@ -173,6 +199,9 @@ class MethodCall(Node):
     def __repr__(self) -> str:
         return f"MethodCall({self.operand}, args={self.arguments})"
 
+    def compile(self) -> str:
+        return f"({self.operand.compile()})({','.join(a.compile() for a in self.arguments)})"
+
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return self.operand.evaluate(env)(*(a.evaluate(env) for a in self.arguments))
 
@@ -186,6 +215,10 @@ class Getitem(Node):
 
     def __repr__(self) -> str:
         return f"Getitem({self.operand}, params={self.params})"
+
+    def compile(self) -> str:
+        params = ":".join("" if p is None else p.compile() for p in self.params)
+        return f"({self.operand.compile()})[{params}]"
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         if len(self.params) > 1:

@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import types
 import typing as t
 
 from pysel import ast
@@ -27,26 +28,51 @@ from pysel import tokens
 
 __all__ = ["ast", "lexer", "tokens", "Expression"]
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 T = t.TypeVar("T")
 
 
 class Expression(t.Generic[T]):
-    __slots__ = ("raw", "ast")
+    __slots__ = ("raw", "ast", "py_code", "code_obj")
 
     def __init__(self, raw: str) -> None:
         self.raw: str = raw
+
         self.ast: t.Optional[ast.Node] = None
+        self.py_code: t.Optional[str] = None
+        self.code_obj: t.Optional[types.CodeType] = None
 
-    def to_ast(self) -> ast.Node:
-        if self.ast is not None:
-            return self.ast
+    def compile(self) -> types.CodeType:
+        if self.code_obj is not None:
+            return self.code_obj
+
         self.ast = ast.Parser(self.raw, lexer.Lexer(self.raw).tokenize()).compilation_unit()
-        return self.ast
+        self.py_code = self.ast.compile()
+        self.code_obj = compile(self.py_code, "pysel_expr", "single")
 
-    def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None) -> T:
+        return self.code_obj
+
+    def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None, use_ast: bool = False) -> T:
+        """
+        Evaluate this expression under the given environment.
+
+        Args:
+            env (dict | None): Environment to use to resolve references in the expression.
+            use_ast (bool): Whether to run as an AST walker instead of transpiling the AST to python and running
+                using ``eval`` instead.
+
+        Returns:
+            The output of the expression.
+        """
+
         env = env or {}
         for primitive in (bool, float, int, str):
             env.setdefault(primitive.__name__, primitive)
-        return t.cast(T, self.to_ast().evaluate(env or {}))
+        env.setdefault("None", None)
+
+        if use_ast:
+            self.compile()
+            return t.cast(T, self.ast.evaluate(env))
+
+        return t.cast(T, eval(self.compile(), env))

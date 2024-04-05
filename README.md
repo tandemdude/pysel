@@ -60,14 +60,14 @@ environment can be accessed from within an expression using an identifier - the 
 ```
 
 If you do not wish to evaluate the expression immediately but would still like to know if it is syntactically valid,
-you can call the `to_ast()` method of the `Expression` class. This will parse and validate the expression and return
-the root node of the created abstract syntax tree.
+you can call the `compile()` method of the `Expression` class. This will parse and validate the expression and return
+the compiled code object.
 
 Invalid Expression:
 ```python
 >>> import pysel
 >>> exp = pysel.Expression("'foo")  # Invalid due to unclosed quotes
->>> exp.to_ast()
+>>> exp.compile()
 Traceback (most recent call last):
   ...
     raise errors.ExpressionSyntaxError(
@@ -80,15 +80,15 @@ Valid Expression:
 ```python
 >>> import pysel
 >>> exp = pysel.Expression("'foo'")
->>> exp.to_ast()
-Literal('foo')
+>>> exp.compile()
+<code object <...? at 0x..., file "pysel_expr", line 1>
 ```
 
 ## Language Reference
 
 ### Literals
 
-PySEL currently supports three different types of literals - string literals, integer literals, and float literals.
+PySEL currently supports four different types of literals - string literals, integer literals, float literals, and `None`.
 
 A string literal is any set of characters surrounded by a matching pair of quotes. Quotes can be either single quotation
 marks (`'`) or double quotation marks (`"`). You can also include quotation marks in the string by escaping them using
@@ -122,6 +122,8 @@ include digits after the decimal place - if none are specified, e.g. `2.` then t
 >>> pysel.Expression("1.").evaluate()
 1.0
 ```
+
+`None` is implemented identically to Python.
 
 ### Logical, relational and mathematical operators
 
@@ -317,8 +319,3 @@ slice = [expr, ] ":" [, expr] [, ":" [expr]]
 
 getitem = expr "[", slice | expr, "]"
 ```
-
-# TODO
-
-- Docstrings
-- Doc generation
