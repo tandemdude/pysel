@@ -25,33 +25,36 @@ from pysel import ast
 from pysel import errors
 from pysel import lexer
 from pysel import tokens
+from pysel import vm
 
 __all__ = ["ast", "lexer", "tokens", "Expression"]
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 T = t.TypeVar("T")
 
 
 class Expression(t.Generic[T]):
-    __slots__ = ("raw", "ast", "py_code", "code_obj")
+    __slots__ = ("raw", "ast", "bytecode", "vm")
 
     def __init__(self, raw: str) -> None:
         self.raw: str = raw
 
         self.ast: t.Optional[ast.Node] = None
-        self.py_code: t.Optional[str] = None
-        self.code_obj: t.Optional[types.CodeType] = None
+        self.bytecode: t.Optional[t.List[vm.Instruction]] = None
+        self.vm: t.Optional[vm.VirtualMachine[T]] = None
 
-    def compile(self) -> types.CodeType:
-        if self.code_obj is not None:
-            return self.code_obj
+    def compile(self) -> vm.VirtualMachine:
+        if self.vm is not None:
+            return self.vm
 
         self.ast = ast.Parser(self.raw, lexer.Lexer(self.raw).tokenize()).compilation_unit()
-        self.py_code = self.ast.compile()
-        self.code_obj = compile(self.py_code, "pysel_expr", "single")
 
-        return self.code_obj
+        symbol_table = vm.SymbolTable()
+        self.bytecode = self.ast.compile(symbol_table)
+        self.vm = vm.VirtualMachine(self.bytecode, symbol_table)
+
+        return self.vm
 
     def evaluate(self, env: t.Optional[t.Dict[str, t.Any]] = None, use_ast: bool = False) -> T:
         """
@@ -59,12 +62,14 @@ class Expression(t.Generic[T]):
 
         Args:
             env (dict | None): Environment to use to resolve references in the expression.
-            use_ast (bool): Whether to run as an AST walker instead of transpiling the AST to python and running
-                using ``eval`` instead.
+            use_ast (bool): Whether to run as an AST walker instead of compiling to PySEL bytecode and using
+                the bytecode virtual machine.
 
         Returns:
             The output of the expression.
         """
+        if self.ast is None:
+            self.compile()
 
         env = env or {}
         for primitive in (bool, float, int, str):
@@ -72,7 +77,6 @@ class Expression(t.Generic[T]):
         env.setdefault("None", None)
 
         if use_ast:
-            self.compile()
             return t.cast(T, self.ast.evaluate(env))
 
-        return t.cast(T, eval(self.compile(), env))
+        return t.cast(T, self.vm.run(env))

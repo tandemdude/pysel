@@ -27,6 +27,9 @@ import typing as t
 
 from pysel import errors
 from pysel import tokens as tokens_
+from pysel.vm import Instruction
+from pysel.vm import Opcode
+from pysel.vm import SymbolTable
 
 __all__ = [
     "Node",
@@ -42,24 +45,24 @@ __all__ = [
 
 T = t.TypeVar("T")
 UNARY_OPERATOR_MAPPING = {
-    "!": operator_.not_,
-    "-": operator_.neg,
-    "+": operator_.pos,
+    "!": (operator_.not_, Opcode.NOT),
+    "-": (operator_.neg, Opcode.NEGATE),
+    "+": (operator_.pos, Opcode.POSITIVE),
 }
 BINARY_OPERATOR_MAPPING = {
-    "==": operator_.eq,
-    "!=": operator_.ne,
-    ">": operator_.gt,
-    "<": operator_.lt,
-    ">=": operator_.ge,
-    "<=": operator_.le,
-    "+": operator_.add,
-    "-": operator_.sub,
-    "*": operator_.mul,
-    "/": operator_.truediv,
-    "//": operator_.floordiv,
-    "%": operator_.mod,
-    "**": operator_.pow,
+    "==": (operator_.eq, Opcode.EQUALS),
+    "!=": (operator_.ne, Opcode.NOT_EQUALS),
+    ">": (operator_.gt, Opcode.GREATER_THAN),
+    "<": (operator_.lt, Opcode.LESS_THAN),
+    ">=": (operator_.ge, Opcode.GREATER_THAN_EQUALS),
+    "<=": (operator_.le, Opcode.LESS_THAN_EQUALS),
+    "+": (operator_.add, Opcode.ADD),
+    "-": (operator_.sub, Opcode.SUBTRACT),
+    "*": (operator_.mul, Opcode.MULTIPLY),
+    "/": (operator_.truediv, Opcode.TRUEDIV),
+    "//": (operator_.floordiv, Opcode.FLOORDIV),
+    "%": (operator_.mod, Opcode.MODULO),
+    "**": (operator_.pow, Opcode.POWER),
 }
 
 
@@ -67,7 +70,7 @@ class Node(abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
-    def compile(self) -> str:
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
         ...
 
     @abc.abstractmethod
@@ -84,8 +87,8 @@ class Literal(Node, t.Generic[T]):
     def __repr__(self) -> str:
         return f"Literal({self.value!r})"
 
-    def compile(self) -> str:
-        return repr(self.value)
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        return [Instruction(Opcode.LOAD_CONST, st.add_literal(self.value))]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> T:
         return self.value
@@ -100,8 +103,8 @@ class Reference(Node):
     def __repr__(self) -> str:
         return f"Reference({self.name!r})"
 
-    def compile(self) -> str:
-        return self.name
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        return [Instruction(Opcode.LOAD_REF, st.add_reference(self.name))]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return env[self.name]
@@ -117,11 +120,11 @@ class UnaryOp(Node):
     def __repr__(self) -> str:
         return f"UnaryOp({self.operator}, {self.operand})"
 
-    def compile(self) -> str:
-        return f"{self.operator}({self.operand.compile()})" if self.operator != "!" else f"not ({self.operand.compile()})"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        return [*self.operand.compile(st), Instruction(UNARY_OPERATOR_MAPPING[self.operator][1], None)]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
-        return UNARY_OPERATOR_MAPPING[self.operator](self.operand.evaluate(env))  # type: ignore[operator]
+        return UNARY_OPERATOR_MAPPING[self.operator][0](self.operand.evaluate(env))  # type: ignore[operator]
 
 
 class BinaryOp(Node):
@@ -135,12 +138,22 @@ class BinaryOp(Node):
     def __repr__(self) -> str:
         return f"BinaryOp({self.lh}, {self.operator}, {self.rh})"
 
-    def compile(self) -> str:
-        # special case && , ||
-        if self.operator == "&&" or self.operator == "||":
-            return f"({self.lh.compile()}) {'and' if self.operator == '&&' else 'or'} ({self.rh.compile()})"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        lh_instruction = self.lh.compile(st)
+        rh_instruction = self.rh.compile(st)
 
-        return f"({self.lh.compile()}) {self.operator} ({self.rh.compile()})"
+        # Special cases
+        if self.operator == "||" or self.operator == "&&":
+            return [
+                *lh_instruction,
+                Instruction(
+                    Opcode.JUMP_IF_TRUE if self.operator == "||" else Opcode.JUMP_IF_FALSE, len(rh_instruction) + 1
+                ),
+                Instruction(Opcode.POP, None),
+                *rh_instruction,
+            ]
+
+        return [*rh_instruction, *lh_instruction, Instruction(BINARY_OPERATOR_MAPPING[self.operator][1], None)]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         # We process 'or' and 'and' separately to allow operator short-circuiting
@@ -149,7 +162,7 @@ class BinaryOp(Node):
         elif self.operator == "&&":
             return self.lh.evaluate(env) and self.rh.evaluate(env)
 
-        return BINARY_OPERATOR_MAPPING[self.operator](self.lh.evaluate(env), self.rh.evaluate(env))
+        return BINARY_OPERATOR_MAPPING[self.operator][0](self.lh.evaluate(env), self.rh.evaluate(env))
 
 
 class TernaryOp(Node):
@@ -163,8 +176,23 @@ class TernaryOp(Node):
     def __repr__(self) -> str:
         return f"TernaryOp({self.condition} ? {self.when_true} : {self.when_false})"
 
-    def compile(self) -> str:
-        return f"({self.when_true.compile()}) if ({self.condition.compile()}) else ({self.when_false.compile()})"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        instructions = [*self.condition.compile(st)]
+
+        when_true_instructions = self.when_true.compile(st)
+        when_false_instruction = self.when_false.compile(st)
+
+        instructions.extend(
+            [
+                Instruction(Opcode.POP_JUMP_IF_FALSE, len(when_true_instructions) + 2),
+                Instruction(Opcode.POP, None),
+                *when_true_instructions,
+                Instruction(Opcode.JUMP, len(when_false_instruction)),
+                *when_false_instruction,
+            ]
+        )
+
+        return instructions
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         if self.condition.evaluate(env):
@@ -182,8 +210,12 @@ class Accessor(Node):
     def __repr__(self) -> str:
         return f"Accessor({self.operand}, {self.attr!r})"
 
-    def compile(self) -> str:
-        return f"({self.operand.compile()}).{self.attr}"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        return [
+            Instruction(Opcode.LOAD_CONST, st.add_literal(self.attr)),
+            *self.operand.compile(st),
+            Instruction(Opcode.GETATTR, None),
+        ]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return getattr(self.operand.evaluate(env), self.attr)
@@ -199,8 +231,15 @@ class MethodCall(Node):
     def __repr__(self) -> str:
         return f"MethodCall({self.operand}, args={self.arguments})"
 
-    def compile(self) -> str:
-        return f"({self.operand.compile()})({','.join(a.compile() for a in self.arguments)})"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        instructions: t.List[Instruction] = []
+        for argument in self.arguments[::-1]:
+            instructions.extend(argument.compile(st))
+
+        instructions.extend(self.operand.compile(st))
+        instructions.append(Instruction(Opcode.CALL, len(self.arguments)))
+
+        return instructions
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return self.operand.evaluate(env)(*(a.evaluate(env) for a in self.arguments))
@@ -213,16 +252,32 @@ class Getitem(Node):
         self.operand = operand
         self.params: t.List[t.Optional[Node]] = list(params)
 
+        if len(self.params) > 1:
+            self.params.extend([None] * (3 - len(self.params)))
+
     def __repr__(self) -> str:
         return f"Getitem({self.operand}, params={self.params})"
 
-    def compile(self) -> str:
-        params = ":".join("" if p is None else p.compile() for p in self.params)
-        return f"({self.operand.compile()})[{params}]"
+    def compile(self, st: SymbolTable) -> t.List[Instruction]:
+        none_const_id = st.add_literal(None)
+
+        instructions: t.List[Instruction] = []
+        if len(self.params) > 1:
+            for param in self.params[::-1]:
+                if param is None:
+                    instructions.append(Instruction(Opcode.LOAD_CONST, none_const_id))
+                else:
+                    instructions.extend(param.compile(st))
+        else:
+            instructions.extend(self.params[0].compile(st))
+
+        instructions.extend(self.operand.compile(st))
+        instructions.append(Instruction(Opcode.GETITEM, len(self.params)))
+
+        return instructions
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         if len(self.params) > 1:
-            self.params.extend([None] * (3 - len(self.params)))
             return self.operand.evaluate(env)[slice(*(p.evaluate(env) if p else None for p in self.params))]
         assert len(self.params) == 1 and self.params[0] is not None
         return self.operand.evaluate(env)[self.params[0].evaluate(env)]
