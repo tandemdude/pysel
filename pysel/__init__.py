@@ -18,7 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import types
+"""A simple but powerful embedded expression language for Python."""
+
 import typing as t
 
 from pysel import ast
@@ -27,7 +28,7 @@ from pysel import lexer
 from pysel import tokens
 from pysel import vm
 
-__all__ = ["ast", "lexer", "tokens", "Expression"]
+__all__ = ["Expression", "ast", "lexer", "tokens"]
 
 __version__ = "0.0.5"
 
@@ -35,7 +36,7 @@ T = t.TypeVar("T")
 
 
 class Expression(t.Generic[T]):
-    __slots__ = ("raw", "ast", "bytecode", "vm")
+    __slots__ = ("ast", "bytecode", "raw", "vm")
 
     def __init__(self, raw: str) -> None:
         self.raw: str = raw
@@ -44,7 +45,7 @@ class Expression(t.Generic[T]):
         self.bytecode: t.Optional[t.List[vm.Instruction]] = None
         self.vm: t.Optional[vm.VirtualMachine[T]] = None
 
-    def compile(self) -> vm.VirtualMachine:
+    def compile(self) -> vm.VirtualMachine[T]:
         if self.vm is not None:
             return self.vm
 
@@ -77,6 +78,8 @@ class Expression(t.Generic[T]):
         env.setdefault("None", None)
 
         if use_ast:
-            return t.cast(T, self.ast.evaluate(env))
+            assert self.ast is not None
+            return t.cast("T", self.ast.evaluate(env))
 
-        return t.cast(T, self.vm.run(env))
+        assert self.vm is not None
+        return self.vm.run(env)

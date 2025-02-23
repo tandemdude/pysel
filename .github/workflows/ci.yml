@@ -37,7 +37,7 @@ jobs:
       - name: Run mypy
         run: |
           pip install nox
-          nox -s mypy
+          nox -s typecheck
 
   test:
     name: Test

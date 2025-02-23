@@ -23,15 +23,15 @@ import enum
 import typing as t
 
 __all__ = [
-    "TokenType",
-    "Token",
+    "ErrorToken",
+    "FloatToken",
+    "IdentifierToken",
+    "IntToken",
     "LiteralMixin",
     "OperatorToken",
-    "IdentifierToken",
     "StringToken",
-    "IntToken",
-    "FloatToken",
-    "ErrorToken",
+    "Token",
+    "TokenType",
 ]
 
 
@@ -86,7 +86,7 @@ SORTED_TOKEN_TYPES = sorted(
 
 
 class Token(abc.ABC):
-    __slots__ = ("value", "at", "type")
+    __slots__ = ("at", "type", "value")
 
     value: t.Any
     at: int

@@ -29,34 +29,30 @@ SCRIPT_PATHS = [
     "noxfile.py",
 ]
 
-options.sessions = ["format_fix", "mypy", "test"]
+options.sessions = ["format_fix", "typecheck", "test"]
 
 
 @nox.session()
-def format_fix(session):
-    session.install("-Ur", "dev_requirements.txt")
-    session.run("python", "-m", "black", *SCRIPT_PATHS)
-    session.run("python", "-m", "isort", *SCRIPT_PATHS)
+def format_fix(session: nox.Session) -> None:
+    session.install("-U", ".[dev.format]")
+    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
+    session.run("python", "-m", "ruff", "check", "--fix", *SCRIPT_PATHS)
 
 
 @nox.session()
-def format_check(session):
-    session.install("-Ur", "dev_requirements.txt")
-    session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
+def format_check(session: nox.Session) -> None:
+    session.install("-U", ".[dev.format]")
+    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
+    session.run("python", "-m", "ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()
-def mypy(session):
-    session.install("-Ur", "dev_requirements.txt")
+def typecheck(session: nox.Session) -> None:
+    session.install("-U", ".[dev.typecheck,dev.test]")
     session.run("python", "-m", "mypy", "pysel")
 
 
 @nox.session()
-def test(session):
-    session.install("-Ur", "dev_requirements.txt")
+def test(session: nox.Session) -> None:
+    session.install("-U", ".[dev.test]")
     session.run("python", "-m", "pytest", "tests")
-
-
-# @nox.session(reuse_venv=True)
-# def sphinx(session):
-#     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

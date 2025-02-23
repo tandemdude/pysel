@@ -27,7 +27,7 @@ __all__ = ["Lexer"]
 
 
 class Lexer:
-    __slots__ = ("raw", "tokens", "idx", "eof")
+    __slots__ = ("eof", "idx", "raw", "tokens")
 
     def __init__(self, raw: str) -> None:
         self.raw: str = raw

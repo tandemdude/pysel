@@ -4,11 +4,11 @@ import typing as t
 
 T = t.TypeVar("T")
 
-__all__ = ["SymbolTable", "Opcode", "Instruction", "VirtualMachine"]
+__all__ = ["Instruction", "Opcode", "SymbolTable", "VirtualMachine"]
 
 
 class SymbolTable:
-    __slots__ = ("_literals", "_next_literal_id", "_references", "_next_reference_id")
+    __slots__ = ("_literals", "_next_literal_id", "_next_reference_id", "_references")
 
     def __init__(self) -> None:
         self._literals: t.Dict[int, t.Any] = {}
@@ -27,7 +27,7 @@ class SymbolTable:
 
     def add_literal(self, val: t.Any) -> int:
         if val in self._literals.values():
-            return [k for k, v in self._literals.items() if v == val][0]
+            return next(k for k, v in self._literals.items() if v == val)
 
         symbol_id = self._next_literal_id
         self._literals[symbol_id] = val
@@ -37,7 +37,7 @@ class SymbolTable:
 
     def add_reference(self, ref: str) -> int:
         if ref in self._references.values():
-            return [k for k, v in self._references.items() if v == ref][0]
+            return next(k for k, v in self._references.items() if v == ref)
 
         symbol_id = self._next_reference_id
         self._references[symbol_id] = ref
@@ -84,7 +84,7 @@ class Opcode(enum.IntEnum):
 
 class Instruction(t.NamedTuple):
     opcode: Opcode
-    operand: t.Optional[int]
+    operand: int = -1
 
 
 class VirtualMachine(t.Generic[T]):
@@ -106,7 +106,7 @@ class VirtualMachine(t.Generic[T]):
 
     def run(self, context: t.Dict[str, t.Any]) -> T:
         literals, references = self._symbols.literals, self._symbols.references
-        stack = collections.deque()
+        stack: collections.deque[t.Any] = collections.deque()
 
         pc = 0
         while pc < len(self._code):
@@ -186,4 +186,4 @@ class VirtualMachine(t.Generic[T]):
 
             pc += offset
 
-        return stack.pop()
+        return t.cast("T", stack.pop())

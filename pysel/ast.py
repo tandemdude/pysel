@@ -32,15 +32,15 @@ from pysel.vm import Opcode
 from pysel.vm import SymbolTable
 
 __all__ = [
-    "Node",
-    "Literal",
-    "Reference",
-    "UnaryOp",
-    "BinaryOp",
-    "TernaryOp",
     "Accessor",
+    "BinaryOp",
+    "Literal",
     "MethodCall",
+    "Node",
     "Parser",
+    "Reference",
+    "TernaryOp",
+    "UnaryOp",
 ]
 
 T = t.TypeVar("T")
@@ -70,12 +70,10 @@ class Node(abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
-    def compile(self, st: SymbolTable) -> t.List[Instruction]:
-        ...
+    def compile(self, st: SymbolTable) -> t.List[Instruction]: ...
 
     @abc.abstractmethod
-    def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
-        ...
+    def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any: ...
 
 
 class Literal(Node, t.Generic[T]):
@@ -111,7 +109,7 @@ class Reference(Node):
 
 
 class UnaryOp(Node):
-    __slots__ = ("operator", "operand")
+    __slots__ = ("operand", "operator")
 
     def __init__(self, operator: str, operand: Node) -> None:
         self.operator = operator
@@ -121,7 +119,7 @@ class UnaryOp(Node):
         return f"UnaryOp({self.operator}, {self.operand})"
 
     def compile(self, st: SymbolTable) -> t.List[Instruction]:
-        return [*self.operand.compile(st), Instruction(UNARY_OPERATOR_MAPPING[self.operator][1], None)]
+        return [*self.operand.compile(st), Instruction(UNARY_OPERATOR_MAPPING[self.operator][1], -1)]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         return UNARY_OPERATOR_MAPPING[self.operator][0](self.operand.evaluate(env))  # type: ignore[operator]
@@ -149,11 +147,11 @@ class BinaryOp(Node):
                 Instruction(
                     Opcode.JUMP_IF_TRUE if self.operator == "||" else Opcode.JUMP_IF_FALSE, len(rh_instruction) + 1
                 ),
-                Instruction(Opcode.POP, None),
+                Instruction(Opcode.POP, -1),
                 *rh_instruction,
             ]
 
-        return [*rh_instruction, *lh_instruction, Instruction(BINARY_OPERATOR_MAPPING[self.operator][1], None)]
+        return [*rh_instruction, *lh_instruction, Instruction(BINARY_OPERATOR_MAPPING[self.operator][1], -1)]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
         # We process 'or' and 'and' separately to allow operator short-circuiting
@@ -166,7 +164,7 @@ class BinaryOp(Node):
 
 
 class TernaryOp(Node):
-    __slots__ = ("condition", "when_true", "when_false")
+    __slots__ = ("condition", "when_false", "when_true")
 
     def __init__(self, condition: Node, when_true: Node, when_false: Node) -> None:
         self.condition = condition
@@ -184,8 +182,7 @@ class TernaryOp(Node):
 
         instructions.extend(
             [
-                Instruction(Opcode.POP_JUMP_IF_FALSE, len(when_true_instructions) + 2),
-                Instruction(Opcode.POP, None),
+                Instruction(Opcode.POP_JUMP_IF_FALSE, len(when_true_instructions) + 1),
                 *when_true_instructions,
                 Instruction(Opcode.JUMP, len(when_false_instruction)),
                 *when_false_instruction,
@@ -201,7 +198,7 @@ class TernaryOp(Node):
 
 
 class Accessor(Node):
-    __slots__ = ("operand", "attr")
+    __slots__ = ("attr", "operand")
 
     def __init__(self, operand: Node, attr: str) -> None:
         self.operand = operand
@@ -214,7 +211,7 @@ class Accessor(Node):
         return [
             Instruction(Opcode.LOAD_CONST, st.add_literal(self.attr)),
             *self.operand.compile(st),
-            Instruction(Opcode.GETATTR, None),
+            Instruction(Opcode.GETATTR, -1),
         ]
 
     def evaluate(self, env: t.Mapping[str, t.Any]) -> t.Any:
@@ -222,7 +219,7 @@ class Accessor(Node):
 
 
 class MethodCall(Node):
-    __slots__ = ("operand", "arguments")
+    __slots__ = ("arguments", "operand")
 
     def __init__(self, operand: Node, arguments: t.Sequence[Node]) -> None:
         self.operand = operand
@@ -269,7 +266,9 @@ class Getitem(Node):
                 else:
                     instructions.extend(param.compile(st))
         else:
-            instructions.extend(self.params[0].compile(st))
+            param = self.params[0]
+            assert param is not None
+            instructions.extend(param.compile(st))
 
         instructions.extend(self.operand.compile(st))
         instructions.append(Instruction(Opcode.GETITEM, len(self.params)))
@@ -284,7 +283,7 @@ class Getitem(Node):
 
 
 class Parser:
-    __slots__ = ("raw", "tokens", "idx", "error_stack")
+    __slots__ = ("error_stack", "idx", "raw", "tokens")
 
     def __init__(self, raw: str, tokens: t.List[tokens_.Token]) -> None:
         self.raw = raw
@@ -335,7 +334,7 @@ class Parser:
             self.next_token()
             self.error_stack.appendleft(")")
             node = self.ternary()
-            if not getattr(self.peek_next_token(), "value", None) == ")":
+            if getattr(self.peek_next_token(), "value", None) != ")":
                 self.syntax_error()
             self.error_stack.popleft()
             self.next_token()

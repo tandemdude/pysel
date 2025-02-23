@@ -1,8 +1,135 @@
 [build-system]
-requires = ["wheel", "setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["flit_core >=3.9,<4"]
+build-backend = "flit_core.buildapi"
 
-[tool.black]
-line-length     = 120
-target-version  = ["py311"]
-include         = ".*py$"
+[project]
+name = "pysel-lang"
+readme = "README.md"
+requires-python = ">=3.8.0,<3.14"
+authors = [{name = "tandemdude", email = "tandemdude1@gmail.com"}]
+keywords = ["hikari"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dynamic = ["version", "description"]
+
+[project.urls]
+Homepage = "https://github.com/tandemdude/pysel"
+Repository = "https://github.com/tandemdude/pysel"
+
+[project.optional-dependencies]
+dev = ["nox==2025.2.9"]
+"dev.typecheck" = ["mypy==1.15.0"]
+"dev.format" = ["ruff==0.9.6"]
+"dev.slotscheck" = ["slotscheck>=0.19.0, <1"]
+"dev.test" = ["pytest==8.3.4"]
+
+[tool.flit.module]
+name = "pysel"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+preview = true
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "TCH",   # typechecking imports
+    "N",     # naming
+    "Q",     # enforce double-quotes
+    "RSE",   # avoid needless parens
+    "SIM",   # simplification
+    "RUF",   # ruff lints
+    "D2",    # Docstring formatting
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D3",    # Use triple-quotes
+    "D415",  # First line of docstring should end with period
+    "D417",  # Missing argument descriptions in docstring
+    "D418",  # No docstring on @overload
+    "D419",  # No empty docstring
+    "ANN2",  # Function missing return type annotation
+]
+fixable = [
+    "I",     # isort errors
+    "TCH",   # typechecking imports
+    "F401",  # unused import
+    "F404",  # late __future__ import
+    "F541",  # f-string with no placeholders
+    "RUF022",  # __all__ is not sorted
+    "RUF023",  # {}.__slots__ is not sorted
+]
+ignore = [
+    "D212",  # Multi-line docstring summary should start at the first line
+    "RUF001", # ambiguous character
+    "N818",   # exception name should end in Error
+    "D205",   # 1 blank line required between summary line and description
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.per-file-ignores]
+# F401 (Unused import) - init files don't use their imports
+# F403 (Star import used) - hopefully we're sensible enough to know what objects modules contain
+# F405 (Import via star) - everything is imported to top-level
+"__init__.py" = ["F401", "F403", "F405"]
+
+# N802 (Function name should be lowercase)
+# RUF029 (Function is declared async but does not use async/await)
+"tests/*.py" = ["N802", "RUF029"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.slotscheck]
+strict-imports = true
+require-superclass = true
+require-subclass = true
+
+[tool.mypy]
+# general settings
+strict = true
+check_untyped_defs = true
+incremental = true
+namespace_packages = true
+no_implicit_optional = true
+pretty = true
+python_version = "3.11"
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+
+# stuff to allow
+allow_untyped_globals = false
+allow_redefinition = true
+
+# stuff to disallow
+disallow_untyped_decorators = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+
+# warnings
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
