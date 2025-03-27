@@ -30,7 +30,7 @@ from pysel import vm
 
 __all__ = ["Expression", "ast", "lexer", "tokens"]
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 T = t.TypeVar("T")
 
