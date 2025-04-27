@@ -34,7 +34,7 @@ Repository = "https://github.com/tandemdude/pysel"
 [project.optional-dependencies]
 dev = ["nox==2025.2.9"]
 "dev.typecheck" = ["mypy==1.15.0"]
-"dev.format" = ["ruff==0.11.6"]
+"dev.format" = ["ruff==0.11.7"]
 "dev.slotscheck" = ["slotscheck>=0.19.0, <1"]
 "dev.test" = ["pytest==8.3.5"]
 
