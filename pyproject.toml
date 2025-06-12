@@ -36,7 +36,7 @@ dev = ["nox==2025.5.1"]
 "dev.typecheck" = ["mypy==1.16.0"]
 "dev.format" = ["ruff==0.11.13"]
 "dev.slotscheck" = ["slotscheck>=0.19.0, <1"]
-"dev.test" = ["pytest==8.3.5"]
+"dev.test" = ["pytest==8.4.0"]
 
 [tool.flit.module]
 name = "pysel"
